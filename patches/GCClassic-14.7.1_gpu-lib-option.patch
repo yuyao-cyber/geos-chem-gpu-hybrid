@@ -1,0 +1,40 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 401f47c..93786b8 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -198,6 +198,35 @@ target_link_libraries(GEOSChemBuildProperties INTERFACE
+     ${NETCDF_LIBRARIES}
+ )
+ 
++#-----------------------------------------------------------------------------
++# Optional GPU chemistry library (batched KPP solver built with nvfortran /
++# OpenACC, see $WS/gpulib).  Configure with
++#     -DGC_GPU_LIB=/path/to/libgcchemgpu.so
++# to enable the GC_BATCH_CHEM=2 runtime path.  The library is reached
++# through BIND(C) interfaces only, so the gfortran-built model links it
++# like any C shared library; RPATHs point at the library directory and at
++# the copied nvhpc runtime (<dir>/nvrt).  Leaving GC_GPU_LIB empty builds
++# the model exactly as before (GC_GPU_CHEM undefined).
++#-----------------------------------------------------------------------------
++set(GC_GPU_LIB "" CACHE FILEPATH
++    "Path to libgcchemgpu.so (nvfortran/OpenACC batched chemistry solver); empty = no GPU path"
++)
++if(GC_GPU_LIB)
++    get_filename_component(GC_GPU_LIB_DIR "${GC_GPU_LIB}" DIRECTORY)
++    target_compile_definitions(GEOSChemBuildProperties INTERFACE GC_GPU_CHEM)
++    target_link_libraries(GEOSChemBuildProperties INTERFACE
++        "${GC_GPU_LIB}"
++        "-Wl,-rpath,${GC_GPU_LIB_DIR}"
++        "-Wl,-rpath,${GC_GPU_LIB_DIR}/nvrt"
++        # export the model's no-op acc_register_library (fullchem_mod.F90) so
++        # the nvhpc runtime's weak reference binds to it, not to libgomp's stub
++        "-Wl,--export-dynamic-symbol=acc_register_library"
++    )
++    # CMake rewrites the RPATH at install time; keep the library dirs in it
++    set(CMAKE_INSTALL_RPATH "${GC_GPU_LIB_DIR};${GC_GPU_LIB_DIR}/nvrt")
++    message(STATUS "GPU chemistry library: ${GC_GPU_LIB} (GC_GPU_CHEM defined)")
++endif()
++
+ #-----------------------------------------------------------------------------
+ # Use the NC_HAS_COMPRESSION def if nf_def_var_deflate is in netcdf.inc
+ #-----------------------------------------------------------------------------

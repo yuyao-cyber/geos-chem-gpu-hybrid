@@ -1,0 +1,73 @@
+Summary: 21 variables bit-identical, 380 with differences (of 401 compared)
+
+Per class:
+class    nvars ident  diff    max_rel median_maxrel max_gmean_rel
+KPP-var    353     2   351  1.000e+00     1.229e-01     1.622e-04
+KPP-fix      3     0     3  7.252e-15     7.022e-15     0.000e+00
+nonKPP      19     0    19  1.000e+00     1.914e-12     1.461e-05
+Chem_*      10     4     6  1.000e+00     2.681e-01     2.840e-04
+other       16    15     1  1.138e-12     1.138e-12     0.000e+00
+
+Key species (global-mean relative diff, max elementwise relative diff):
+  OH     identical=False gmean_rel=1.511e-07 max_rel=1.435e-01 ndiff=195735/238464
+  O3     identical=False gmean_rel=5.709e-09 max_rel=1.014e-04 ndiff=238320/238464
+  NO2    identical=False gmean_rel=1.629e-07 max_rel=2.966e-02 ndiff=238461/238464
+  CO     identical=False gmean_rel=1.262e-11 max_rel=3.455e-04 ndiff=237824/238464
+  HO2    identical=False gmean_rel=9.324e-07 max_rel=1.273e-01 ndiff=195792/238464
+  NO     identical=False gmean_rel=1.792e-07 max_rel=1.000e+00 ndiff=238460/238464
+  HNO3   identical=False gmean_rel=1.121e-05 max_rel=9.907e-01 ndiff=238335/238464
+  ISOP   identical=False gmean_rel=1.021e-06 max_rel=1.000e+00 ndiff=238224/238464
+  SO2    identical=False gmean_rel=9.306e-08 max_rel=1.000e+00 ndiff=238425/238464
+  SO4    identical=False gmean_rel=1.152e-08 max_rel=5.562e-04 ndiff=238237/238464
+  BCPI   identical=False gmean_rel=1.246e-16 max_rel=5.068e-12 ndiff=225139/238464
+  OCPI   identical=False gmean_rel=1.616e-16 max_rel=2.235e-13 ndiff=225851/238464
+  SALA   identical=False gmean_rel=1.172e-16 max_rel=7.536e-10 ndiff=212400/238464
+
+Worst 15 by max relative diff:
+  Chem_SO2AfterChem            [Chem_*] maxrel=1.000e+00 maxabs=2.617e-13 gmean_rel=8.957e-08 ndiff=195296/238464
+  SpeciesRst_ACRO2             [KPP-var] maxrel=1.000e+00 maxabs=5.161e-17 gmean_rel=3.080e-07 ndiff=195873/238464
+  SpeciesRst_BCPO              [nonKPP] maxrel=1.000e+00 maxabs=4.136e-24 gmean_rel=0.000e+00 ndiff=184238/238464
+  SpeciesRst_BUTN              [KPP-var] maxrel=1.000e+00 maxabs=3.220e-17 gmean_rel=2.892e-07 ndiff=238166/238464
+  SpeciesRst_BUTO2             [KPP-var] maxrel=1.000e+00 maxabs=3.127e-17 gmean_rel=7.702e-07 ndiff=195197/238464
+  SpeciesRst_BrSALA            [KPP-var] maxrel=1.000e+00 maxabs=5.466e-14 gmean_rel=4.703e-06 ndiff=238464/238464
+  SpeciesRst_C4H6              [KPP-var] maxrel=1.000e+00 maxabs=7.554e-16 gmean_rel=6.055e-07 ndiff=238202/238464
+  SpeciesRst_C4HVP1            [KPP-var] maxrel=1.000e+00 maxabs=2.106e-17 gmean_rel=1.352e-06 ndiff=140926/238464
+  SpeciesRst_C4HVP2            [KPP-var] maxrel=1.000e+00 maxabs=1.425e-16 gmean_rel=7.387e-07 ndiff=141120/238464
+  SpeciesRst_CH2I2             [KPP-var] maxrel=1.000e+00 maxabs=4.722e-17 gmean_rel=3.078e-11 ndiff=238374/238464
+  SpeciesRst_CH2IBr            [KPP-var] maxrel=1.000e+00 maxabs=3.392e-18 gmean_rel=3.368e-08 ndiff=238066/238464
+  SpeciesRst_EBZ               [KPP-var] maxrel=1.000e+00 maxabs=1.518e-31 gmean_rel=1.081e-10 ndiff=237326/238464
+  SpeciesRst_FURA              [KPP-var] maxrel=1.000e+00 maxabs=4.057e-15 gmean_rel=3.912e-07 ndiff=238148/238464
+  SpeciesRst_HPALD1            [KPP-var] maxrel=1.000e+00 maxabs=1.262e-15 gmean_rel=8.887e-07 ndiff=238148/238464
+  SpeciesRst_HPALD1OO          [KPP-var] maxrel=1.000e+00 maxabs=3.714e-17 gmean_rel=4.234e-06 ndiff=194763/238464
+
+Non-identical variables outside KPP-var:
+  Chem_SO2AfterChem            [Chem_*] maxrel=1.000e+00 ndiff=195296/238464
+  SpeciesRst_BCPO              [nonKPP] maxrel=1.000e+00 ndiff=184238/238464
+  SpeciesRst_OCPO              [nonKPP] maxrel=1.000e+00 ndiff=195274/238464
+  SpeciesRst_NH3               [nonKPP] maxrel=1.000e+00 ndiff=238435/238464
+  Chem_KPPHvalue               [Chem_*] maxrel=1.000e+00 ndiff=62936/238464
+  SpeciesRst_NH4               [nonKPP] maxrel=7.452e-01 ndiff=238409/238464
+  Chem_AeroH2OSNA              [Chem_*] maxrel=5.240e-01 ndiff=105218/238464
+  Chem_H2O2AfterChem           [Chem_*] maxrel=1.230e-02 ndiff=199341/238464
+  Chem_JOH                     [Chem_*] maxrel=9.787e-03 ndiff=3024/3312
+  Chem_JNO2                    [Chem_*] maxrel=1.987e-03 ndiff=3023/3312
+  SpeciesRst_SALC              [nonKPP] maxrel=1.490e-08 ndiff=196737/238464
+  SpeciesRst_SALA              [nonKPP] maxrel=7.536e-10 ndiff=212400/238464
+  SpeciesRst_SOAP              [nonKPP] maxrel=1.447e-11 ndiff=211828/238464
+  SpeciesRst_BCPI              [nonKPP] maxrel=5.068e-12 ndiff=225139/238464
+  SpeciesRst_DSTbin7           [nonKPP] maxrel=3.115e-12 ndiff=203393/238464
+  SpeciesRst_DSTbin6           [nonKPP] maxrel=1.914e-12 ndiff=208854/238464
+  Met_BXHEIGHT                 [other] maxrel=1.138e-12 ndiff=26475/238464
+  SpeciesRst_DSTbin5           [nonKPP] maxrel=7.368e-13 ndiff=219012/238464
+  SpeciesRst_DSTbin3           [nonKPP] maxrel=3.983e-13 ndiff=225013/238464
+  SpeciesRst_DSTbin2           [nonKPP] maxrel=3.818e-13 ndiff=224968/238464
+  SpeciesRst_DSTbin1           [nonKPP] maxrel=3.657e-13 ndiff=226183/238464
+  SpeciesRst_pFe               [nonKPP] maxrel=3.594e-13 ndiff=225888/238464
+  SpeciesRst_DSTbin4           [nonKPP] maxrel=3.462e-13 ndiff=223747/238464
+  SpeciesRst_SOAS              [nonKPP] maxrel=2.874e-13 ndiff=226068/238464
+  SpeciesRst_CLOCK             [nonKPP] maxrel=2.255e-13 ndiff=227415/238464
+  SpeciesRst_OCPI              [nonKPP] maxrel=2.235e-13 ndiff=225851/238464
+  SpeciesRst_N2                [KPP-fix] maxrel=7.252e-15 ndiff=18026/238464
+  SpeciesRst_O2                [KPP-fix] maxrel=7.022e-15 ndiff=12953/238464
+  SpeciesRst_H2                [KPP-fix] maxrel=5.506e-15 ndiff=9088/238464
+exit=1

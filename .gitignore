@@ -1,0 +1,7 @@
+*.o
+*.mod
+*.so
+*.nc4
+*.nc
+build/
+__pycache__/

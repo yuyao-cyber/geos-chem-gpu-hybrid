@@ -1,0 +1,29 @@
+Summary: 401 variables bit-identical, 0 with differences (of 401 compared)
+
+Per class:
+class    nvars ident  diff    max_rel median_maxrel max_gmean_rel
+KPP-var    353   353     0  0.000e+00     0.000e+00     0.000e+00
+KPP-fix      3     3     0  0.000e+00     0.000e+00     0.000e+00
+nonKPP      19    19     0  0.000e+00     0.000e+00     0.000e+00
+Chem_*      10    10     0  0.000e+00     0.000e+00     0.000e+00
+other       16    16     0  0.000e+00     0.000e+00     0.000e+00
+
+Key species (global-mean relative diff, max elementwise relative diff):
+  OH     identical=True  gmean_rel=0.000e+00 max_rel=0.000e+00 ndiff=0/238464
+  O3     identical=True  gmean_rel=0.000e+00 max_rel=0.000e+00 ndiff=0/238464
+  NO2    identical=True  gmean_rel=0.000e+00 max_rel=0.000e+00 ndiff=0/238464
+  CO     identical=True  gmean_rel=0.000e+00 max_rel=0.000e+00 ndiff=0/238464
+  HO2    identical=True  gmean_rel=0.000e+00 max_rel=0.000e+00 ndiff=0/238464
+  NO     identical=True  gmean_rel=0.000e+00 max_rel=0.000e+00 ndiff=0/238464
+  HNO3   identical=True  gmean_rel=0.000e+00 max_rel=0.000e+00 ndiff=0/238464
+  ISOP   identical=True  gmean_rel=0.000e+00 max_rel=0.000e+00 ndiff=0/238464
+  SO2    identical=True  gmean_rel=0.000e+00 max_rel=0.000e+00 ndiff=0/238464
+  SO4    identical=True  gmean_rel=0.000e+00 max_rel=0.000e+00 ndiff=0/238464
+  BCPI   identical=True  gmean_rel=0.000e+00 max_rel=0.000e+00 ndiff=0/238464
+  OCPI   identical=True  gmean_rel=0.000e+00 max_rel=0.000e+00 ndiff=0/238464
+  SALA   identical=True  gmean_rel=0.000e+00 max_rel=0.000e+00 ndiff=0/238464
+
+Worst 15 by max relative diff:
+
+Non-identical variables outside KPP-var:
+exit=0

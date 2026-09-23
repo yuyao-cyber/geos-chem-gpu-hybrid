@@ -1,0 +1,42 @@
+A = /storage1/fs1/rvmartin/Active/y.zhuge/optimize_gc/run_L_hybrid/v4_case_cpu/GEOSChem.Restart.20140702_0000z.nc4
+B = /storage1/fs1/rvmartin/Active/y.zhuge/optimize_gc/run_L_hybrid/case_cpu/GEOSChem.Restart.20140702_0000z.nc4
+
+Relative difference restricted to cells with conc >= 1e-6 x global mean
+species  class       gmean_rel        p50        p99      p99.9        max    ncells
+OH       KPP-var     0.000e+00  0.000e+00  0.000e+00  0.000e+00  0.000e+00    162253
+HO2      KPP-var     0.000e+00  0.000e+00  0.000e+00  0.000e+00  0.000e+00    191386
+O3       KPP-var     0.000e+00  0.000e+00  0.000e+00  0.000e+00  0.000e+00    238464
+NO       KPP-var     0.000e+00  0.000e+00  0.000e+00  0.000e+00  0.000e+00    171558
+NO2      KPP-var     0.000e+00  0.000e+00  0.000e+00  0.000e+00  0.000e+00    234046
+CO       KPP-var     0.000e+00  0.000e+00  0.000e+00  0.000e+00  0.000e+00    238464
+HNO3     KPP-var     0.000e+00  0.000e+00  0.000e+00  0.000e+00  0.000e+00    227390
+ISOP     KPP-var     0.000e+00  0.000e+00  0.000e+00  0.000e+00  0.000e+00     72422
+CH2O     KPP-var     0.000e+00  0.000e+00  0.000e+00  0.000e+00  0.000e+00    238464
+SO2      KPP-var     0.000e+00  0.000e+00  0.000e+00  0.000e+00  0.000e+00    238320
+SO4      KPP-var     0.000e+00  0.000e+00  0.000e+00  0.000e+00  0.000e+00    238464
+PAN      KPP-var     0.000e+00  0.000e+00  0.000e+00  0.000e+00  0.000e+00    207525
+N2O5     KPP-var     0.000e+00  0.000e+00  0.000e+00  0.000e+00  0.000e+00    180672
+BrO      KPP-var     0.000e+00  0.000e+00  0.000e+00  0.000e+00  0.000e+00    220998
+ALD2     KPP-var     0.000e+00  0.000e+00  0.000e+00  0.000e+00  0.000e+00    209046
+MO2      KPP-var     0.000e+00  0.000e+00  0.000e+00  0.000e+00  0.000e+00    195400
+BCPI     nonKPP      0.000e+00  0.000e+00  0.000e+00  0.000e+00  0.000e+00    237944
+OCPI     nonKPP      0.000e+00  0.000e+00  0.000e+00  0.000e+00  0.000e+00    238464
+SALA     nonKPP      0.000e+00  0.000e+00  0.000e+00  0.000e+00  0.000e+00    147838
+SALC     nonKPP      0.000e+00  0.000e+00  0.000e+00  0.000e+00  0.000e+00    115189
+BCPO     nonKPP      0.000e+00  0.000e+00  0.000e+00  0.000e+00  0.000e+00    107260
+
+Zero-crossing check -- for the variables reporting max_rel = 1.0, the
+largest ABSOLUTE difference anywhere in the field:
+  0 variables have some cell with rel diff > 0.99
+
+Chem_* (solver bookkeeping) fields:
+  Chem_AeroH2OSNA            bit-identical
+  Chem_DryDepNitrogen        bit-identical
+  Chem_H2O2AfterChem         bit-identical
+  Chem_JNO2                  bit-identical
+  Chem_JOH                   bit-identical
+  Chem_KPPHvalue             bit-identical
+  Chem_ORVCsesq              bit-identical
+  Chem_SO2AfterChem          bit-identical
+  Chem_StatePSC              bit-identical
+  Chem_WetDepNitrogen        bit-identical

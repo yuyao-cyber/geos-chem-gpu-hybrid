@@ -1,0 +1,3 @@
+
+Summary: 401 variables bit-identical, 0 with differences
+off_vs_cpu exit=0

@@ -1,0 +1,81 @@
+{
+    "description":
+    {
+        "name": "GEOS-Chem Classic timers output",
+        "author": "The International GEOS-Chem Community",
+        "reference": "https://geos-chem.readthedocs.io"
+    },
+    "GEOS-Chem Classic timers":
+    {
+        "GEOS-Chem":
+        {
+            "d_hms": "00-00:07:22.625",
+            "seconds": 442.625
+        },
+        "HEMCO":
+        {
+            "d_hms": "00-00:00:53.875",
+            "seconds": 53.875
+        },
+        "All chemistry":
+        {
+            "d_hms": "00-00:03:02.375",
+            "seconds": 182.375
+        },
+        "=> Gas-phase chem":
+        {
+            "d_hms": "00-00:01:59.000",
+            "seconds": 119.000
+        },
+        "=> Photolysis":
+        {
+            "d_hms": "00-00:00:14.250",
+            "seconds": 14.250
+        },
+        "=> Aerosol chem":
+        {
+            "d_hms": "00-00:00:39.375",
+            "seconds": 39.375
+        },
+        "=> Linearized chem":
+        {
+            "d_hms": "00-00:00:00.375",
+            "seconds": 0.375
+        },
+        "Transport":
+        {
+            "d_hms": "00-00:00:49.625",
+            "seconds": 49.625
+        },
+        "Convection":
+        {
+            "d_hms": "00-00:00:34.250",
+            "seconds": 34.250
+        },
+        "Boundary layer mixing":
+        {
+            "d_hms": "00-00:00:35.000",
+            "seconds": 35.000
+        },
+        "Dry deposition":
+        {
+            "d_hms": "00-00:00:01.875",
+            "seconds": 1.875
+        },
+        "Wet deposition":
+        {
+            "d_hms": "00-00:00:21.375",
+            "seconds": 21.375
+        },
+        "Diagnostics":
+        {
+            "d_hms": "00-00:00:23.750",
+            "seconds": 23.750
+        },
+        "Unit conversions":
+        {
+            "d_hms": "00-00:00:23.250",
+            "seconds": 23.250
+        }
+    }
+}

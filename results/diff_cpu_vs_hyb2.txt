@@ -1,0 +1,52 @@
+A = /storage1/fs1/rvmartin/Active/y.zhuge/optimize_gc/run_L_hybrid/case_cpu/GEOSChem.Restart.20140702_0000z.nc4
+B = /storage1/fs1/rvmartin/Active/y.zhuge/optimize_gc/run_L_hybrid/case_hyb2/GEOSChem.Restart.20140702_0000z.nc4
+
+Relative difference restricted to cells with conc >= 1e-6 x global mean
+species  class       gmean_rel        p50        p99      p99.9        max    ncells
+OH       KPP-var     1.511e-07  1.016e-06  1.540e-03  9.595e-03  1.435e-01    162252
+HO2      KPP-var     9.324e-07  5.470e-07  1.463e-03  8.450e-03  1.273e-01    191386
+O3       KPP-var     5.709e-09  4.083e-09  4.746e-06  1.866e-05  1.014e-04    238464
+NO       KPP-var     1.792e-07  4.020e-07  6.181e-03  3.621e-02  6.811e-01    171554
+NO2      KPP-var     1.629e-07  3.671e-07  6.169e-04  3.290e-03  2.966e-02    234046
+CO       KPP-var     1.262e-11  4.262e-10  2.690e-06  1.938e-05  3.455e-04    238464
+HNO3     KPP-var     1.121e-05  8.461e-08  5.467e-03  8.025e-02  9.907e-01    227390
+ISOP     KPP-var     1.021e-06  5.063e-06  1.404e-03  7.196e-03  8.909e-02     72422
+CH2O     KPP-var     5.336e-08  5.720e-08  2.070e-04  1.481e-03  3.349e-02    238464
+SO2      KPP-var     9.306e-08  1.797e-08  2.247e-04  2.531e-03  9.744e-01    238319
+SO4      KPP-var     1.152e-08  7.795e-10  1.157e-05  4.269e-05  5.562e-04    238464
+PAN      KPP-var     2.662e-08  1.619e-08  4.394e-05  2.028e-04  2.701e-03    207525
+N2O5     KPP-var     4.528e-08  7.701e-07  7.574e-04  3.345e-03  3.123e-02    180672
+BrO      KPP-var     1.077e-07  4.553e-07  2.246e-03  1.613e-02  2.082e-01    220998
+ALD2     KPP-var     1.544e-08  6.368e-08  4.463e-04  3.359e-03  1.232e-01    209046
+MO2      KPP-var     8.692e-07  4.568e-07  8.482e-04  5.968e-03  1.146e-01    195400
+BCPI     nonKPP      1.246e-16  1.490e-15  8.919e-15  1.457e-13  5.068e-12    237944
+OCPI     nonKPP      1.616e-16  1.442e-15  6.932e-15  1.076e-14  2.235e-13    238464
+SALA     nonKPP      1.172e-16  1.233e-15  1.111e-12  2.699e-11  7.536e-10    147838
+SALC     nonKPP      2.506e-16  1.098e-15  1.821e-11  4.229e-10  1.490e-08    115189
+BCPO     nonKPP      0.000e+00  6.223e-16  6.812e-15  9.717e-14  2.142e-12    107260
+
+Zero-crossing check -- for the variables reporting max_rel = 1.0, the
+largest ABSOLUTE difference anywhere in the field:
+  95 variables have some cell with rel diff > 0.99
+    SpeciesRst_HNO3            max_abs_diff=4.311e-10  field_peak=1.568e-08  ratio=2.749e-02
+    SpeciesRst_NIT             max_abs_diff=4.203e-10  field_peak=1.360e-08  ratio=3.091e-02
+    SpeciesRst_NH3             max_abs_diff=8.608e-11  field_peak=2.422e-08  ratio=3.554e-03
+    SpeciesRst_SALACL          max_abs_diff=4.770e-11  field_peak=1.240e-09  ratio=3.848e-02
+    SpeciesRst_O               max_abs_diff=3.279e-11  field_peak=1.835e-07  ratio=1.787e-04
+    SpeciesRst_NO              max_abs_diff=2.011e-11  field_peak=2.018e-08  ratio=9.962e-04
+    SpeciesRst_SALCAL          max_abs_diff=3.618e-12  field_peak=7.703e-08  ratio=4.697e-05
+    SpeciesRst_Cl2             max_abs_diff=2.071e-12  field_peak=8.591e-10  ratio=2.411e-03
+    SpeciesRst_SO2             max_abs_diff=2.581e-13  field_peak=2.481e-08  ratio=1.040e-05
+    SpeciesRst_SALAAL          max_abs_diff=2.219e-13  field_peak=8.001e-10  ratio=2.773e-04
+
+Chem_* (solver bookkeeping) fields:
+  Chem_AeroH2OSNA            max_abs=5.669e-08 mean_abs=1.607e-11 field_mean=7.983e-07
+  Chem_DryDepNitrogen        bit-identical
+  Chem_H2O2AfterChem         max_abs=8.264e-13 mean_abs=6.828e-16 field_mean=2.149e-10
+  Chem_JNO2                  max_abs=3.851e-06 mean_abs=1.747e-08 field_mean=2.363e-03
+  Chem_JOH                   max_abs=1.368e-07 mean_abs=7.562e-10 field_mean=1.266e-04
+  Chem_KPPHvalue             max_abs=1.200e+03 mean_abs=2.071e+01 field_mean=8.399e+02
+  Chem_ORVCsesq              bit-identical
+  Chem_SO2AfterChem          max_abs=2.617e-13 mean_abs=7.762e-17 field_mean=3.302e-11
+  Chem_StatePSC              bit-identical
+  Chem_WetDepNitrogen        bit-identical
