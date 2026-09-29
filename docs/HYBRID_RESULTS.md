@@ -181,17 +181,19 @@ longer holds it).  2x2.5 starts from the 4x5 restart regridded by HEMCO
 
 | | stock | hybrid 1 GPU | hybrid 2 GPUs |
 |---|---:|---:|---:|
-| **4x5** gas-phase chem [s] | 1566 | 1113 (-29%)* | 759 (-52%) |
-| 4x5 all chemistry [s] | 2008 | 1558 | 1174 |
-| 4x5 wall clock | 61 min | 54 min | 46 min |
-| **2x2.5** gas-phase chem [s] (773k cells/step) | 6631 | 3359 (-49%) | 3122 (-53%)** |
-| 2x2.5 all chemistry [s] | 8611 | 5375 | 5122 |
-| 2x2.5 wall clock | 287 min | 226 min | 218 min |
+| **4x5** gas-phase chem [s] | 1566 | 951 (-39%) [shared GPU: 1113] | 759 (-52%) |
+| 4x5 all chemistry [s] | 2008 | 1394 [shared: 1558] | 1174 |
+| 4x5 wall clock | 61 min | 50 min [shared: 54] | 46 min |
+| **2x2.5** gas-phase chem [s] (773k cells/step) | 6631 | 3359 (-49%)* | 2333 (-65%) [shared GPU: 3122] |
+| 2x2.5 all chemistry [s] | 8611 | 5375 | 3977 [shared: 5122] |
+| 2x2.5 wall clock | 287 min | 226 min | 168 min [shared: 218] |
 
-\* slower than the 1-day result (159 vs 119 s/day): another user's job was
-computing on the same shared device.  \*\* the second GPU added only 7%
-because the two devices got equal work but one was 60% slower (shared);
-fixed by v5 below.
+Bracketed values are the first runs, made on GPU devices shared with other
+users' jobs; the unbracketed 1-GPU 4x5 and 2-GPU 2x2.5 values are reruns on
+reserved devices (`-gpu "...:gmem=70G"`, v5 per-device weighting, 2026-09-24/25).
+On the 2x2.5 rerun the two devices still ran at different speeds and the
+weighting gave them 138k vs 232k cells so both finished in 3.8 s.
+\* the 1-GPU 2x2.5 case also ran on a shared node and was not rerun.
 
 ### Correctness: drift over 7 days vs the rounding-only control
 

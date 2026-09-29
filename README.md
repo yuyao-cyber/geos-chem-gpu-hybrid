@@ -19,14 +19,15 @@ timer for the KPP chemistry loop; zero solver failures in every run.
 | Run | Stock (CPU) | Hybrid, 1 A100 | Hybrid, 2 A100 |
 |---|---:|---:|---:|
 | 1 day, 4x5: gas-phase chem | 229 s | 119 s (-49%) | 105 s (-55%) |
-| 7 days, 4x5: gas-phase chem | 1566 s | 1113 s (-29%)\* | 759 s (-52%) |
-| 7 days, 4x5: wall clock | 61 min | 54 min | 46 min |
-| 7 days, 2x2.5: gas-phase chem | 6631 s | 3359 s (-49%) | 3122 s (-53%)\* |
-| 7 days, 2x2.5: wall clock | 287 min | 226 min | 218 min |
+| 7 days, 4x5: gas-phase chem | 1566 s | 951 s (-39%) | 759 s (-52%) |
+| 7 days, 4x5: wall clock | 61 min | 50 min | 46 min |
+| 7 days, 2x2.5: gas-phase chem | 6631 s | 3359 s (-49%)\* | 2333 s (-65%) |
+| 7 days, 2x2.5: wall clock | 287 min | 226 min | 168 min |
 
-\* degraded by other users' jobs sharing the GPU (see `docs/HYBRID_RESULTS.md`
-section 7); the per-device adaptive weighting in the current code addresses the
-2-GPU case.
+\* measured on a shared GPU node and possibly degraded (not rerun). The two
+cases that were visibly degraded by sharing were rerun on reserved devices
+(`gmem=70G`) with per-device adaptive weighting; the table shows the reruns
+(details in `docs/HYBRID_RESULTS.md` section 7).
 
 **Correctness.** Stock vs. the modified model's CPU path: all 401 restart
 variables byte-identical. CPU vs. GPU: differences are at the level of a
