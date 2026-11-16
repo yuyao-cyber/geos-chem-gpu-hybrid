@@ -1,0 +1,11 @@
+0708 ratio   0.78 gpu_gmean 3.75e-08 ctl_gmean 4.83e-08 top5   3% | worst lev 69 lat -6 lon -60: stock 5.551e-09 gpu 5.551e-09 (rel 2.0e-06); ctl worst rel 3.9e-03
+0715 ratio   1.00 gpu_gmean 3.71e-07 ctl_gmean 3.72e-07 top5   8% | worst lev 71 lat -6 lon -80: stock 1.131e-09 gpu 1.131e-09 (rel 3.3e-04); ctl worst rel 1.0e-03
+0722 ratio   1.54 gpu_gmean 3.13e-07 ctl_gmean 2.04e-07 top5   6% | worst lev 68 lat 6 lon 90: stock 5.114e-09 gpu 5.115e-09 (rel 4.6e-05); ctl worst rel 1.1e-03
+0725 ratio   4.48 gpu_gmean 7.30e-07 ctl_gmean 1.63e-07 top5  11% | worst lev 71 lat -14 lon 95: stock 1.436e-09 gpu 1.437e-09 (rel 7.7e-04); ctl worst rel 1.7e-03
+0727 ratio   9.47 gpu_gmean 1.43e-06 ctl_gmean 1.51e-07 top5  10% | worst lev 71 lat -6 lon 120: stock 1.311e-09 gpu 1.308e-09 (rel 2.4e-03); ctl worst rel 2.7e-03
+0728 ratio  12.75 gpu_gmean 1.91e-06 ctl_gmean 1.49e-07 top5  13% | worst lev 71 lat -14 lon 120: stock 1.396e-09 gpu 1.400e-09 (rel 2.4e-03); ctl worst rel 5.4e-03
+0729 ratio  14.95 gpu_gmean 2.09e-06 ctl_gmean 1.40e-07 top5   4% | worst lev 71 lat -22 lon 135: stock 1.603e-09 gpu 1.604e-09 (rel 6.4e-04); ctl worst rel 1.4e-03
+0730 ratio  13.26 gpu_gmean 1.60e-06 ctl_gmean 1.20e-07 top5   2% | worst lev 71 lat -58 lon -45: stock 2.085e-09 gpu 2.085e-09 (rel 1.8e-04); ctl worst rel 1.5e-03
+0731 ratio  15.77 gpu_gmean 1.55e-06 ctl_gmean 9.81e-08 top5   4% | worst lev 70 lat -78 lon -170: stock 1.887e-09 gpu 1.887e-09 (rel 4.6e-04); ctl worst rel 3.2e-03
+0801 ratio  13.94 gpu_gmean 1.29e-06 ctl_gmean 9.26e-08 top5   3% | worst lev 71 lat -26 lon 175: stock 1.487e-09 gpu 1.486e-09 (rel 5.1e-04); ctl worst rel 1.6e-03
+MTPO_DONE

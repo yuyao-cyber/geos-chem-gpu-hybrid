@@ -187,6 +187,13 @@ CONTAINS
        ENDIF
     ENDIF
     IF ( nCell <= 0 ) RETURN
+    IF ( ws_global_mode() ) THEN
+       ! low-memory mode: workspace in device global arrays, chunked launches
+       CALL integrate_batch_global_ws( nCell, Tstart, Tend, C, RCONST,       &
+                                       ATOL, RTOL, ICNTRL, RCNTRL, Perm,    &
+                                       ISTAT, RSTAT, IERR, tTotal, tKernel )
+       RETURN
+    ENDIF
 
     CALL SYSTEM_CLOCK( c0, crate )
     !$acc data copy(C) copyin(RCONST, ATOL, RTOL, ICNTRL, RCNTRL, Perm)      &
@@ -207,6 +214,133 @@ CONTAINS
     tKernel = REAL( c2 - c1, dp ) / REAL( crate, dp )
     tTotal  = REAL( c3 - c0, dp ) / REAL( crate, dp )
   END SUBROUTINE gc_gpu_integrate_batch_dev
+
+  !--------------------------------------------------------------------------
+  ! LOW-MEMORY MODE (env GC_GPU_WORKSPACE=global).
+  ! The per-cell solver workspace (stage vectors, Jacobian, LU factors,
+  ! ~122 KB per cell) lives in device GLOBAL arrays sized for a CHUNK of
+  ! cells (env GC_GPU_CHUNK, default 32768) instead of in per-thread local
+  ! memory.  The per-thread stack then only holds the generated kernels' own
+  ! scratch (~30 KB), so NV_ACC_CUDA_STACKSIZE can drop from 150-160 KB to
+  ! ~40 KB and the device footprint from 25-35 GB to roughly
+  !   stack 40 KB x resident threads  +  chunk x 122 KB  +  batch arrays,
+  ! i.e. ~12 GB on a V100 with the default chunk.  Measured in the standalone
+  ! benchmark as ~25% slower per kernel than the local-workspace mode; it
+  ! exists so the solver can share a GPU with other jobs.
+  !--------------------------------------------------------------------------
+  LOGICAL FUNCTION ws_global_mode()
+    CHARACTER(LEN=16) :: v
+    INTEGER :: st
+    v = ''
+    CALL GET_ENVIRONMENT_VARIABLE( 'GC_GPU_WORKSPACE', v, STATUS=st )
+    ws_global_mode = ( st == 0 .and. ( v(1:6) == 'global' .or. v(1:6) == 'GLOBAL' ) )
+  END FUNCTION ws_global_mode
+
+  INTEGER FUNCTION env_int( name, default )
+    ! integer environment variable without Fortran I/O (manual parse)
+    CHARACTER(LEN=*), INTENT(IN) :: name
+    INTEGER,          INTENT(IN) :: default
+    CHARACTER(LEN=24) :: v
+    INTEGER :: st, i, d, val
+    v = ''
+    CALL GET_ENVIRONMENT_VARIABLE( name, v, STATUS=st )
+    env_int = default
+    IF ( st /= 0 ) RETURN
+    val = 0
+    DO i = 1, LEN_TRIM(v)
+       d = ICHAR(v(i:i)) - ICHAR('0')
+       IF ( d < 0 .or. d > 9 ) RETURN
+       val = val*10 + d
+    ENDDO
+    IF ( val > 0 ) env_int = val
+  END FUNCTION env_int
+
+  SUBROUTINE gpu_solve_cell_ws( Y, FIXc, RCONSTc, Tstart, Tend,              &
+                                ATOL_U, RTOL_U, ICNTRL_U, RCNTRL_U,          &
+                                Kw, Ghimj, Jac0, Ynew, Fcn0, Fcn, dFdT, Yerr,&
+                                wP, wD, ISTAT, RSTAT, IERR )
+    !$acc routine seq
+    ! Same option merging as gpu_solve_cell, but the workspace is passed in
+    ! (slices of the chunk arrays) and the inputs are used in place.
+    REAL(dp), INTENT(INOUT) :: Y(NVAR)
+    REAL(dp), INTENT(IN)    :: FIXc(NFIX), RCONSTc(NREACT)
+    REAL(dp), INTENT(IN)    :: Tstart, Tend, ATOL_U(NVAR), RTOL_U(NVAR)
+    INTEGER,  INTENT(IN)    :: ICNTRL_U(20)
+    REAL(dp), INTENT(IN)    :: RCNTRL_U(20)
+    REAL(dp), INTENT(INOUT) :: Kw(NWORK_K), Ghimj(NWORK_J), Jac0(NWORK_J)
+    REAL(dp), INTENT(INOUT) :: Ynew(NVAR), Fcn0(NVAR), Fcn(NVAR), dFdT(NVAR)
+    REAL(dp), INTENT(INOUT) :: Yerr(NVAR), wP(NVAR), wD(NVAR)
+    INTEGER,  INTENT(OUT)   :: ISTAT(8), IERR
+    REAL(dp), INTENT(OUT)   :: RSTAT(3)
+    INTEGER  :: ICNTRL(20), kk
+    REAL(dp) :: RCNTRL(20)
+    DO kk = 1, 20
+       ICNTRL(kk) = 0
+       RCNTRL(kk) = 0.0_dp
+    ENDDO
+    ICNTRL(15) = 5
+    DO kk = 1, 20
+       IF ( ICNTRL_U(kk) /= 0      ) ICNTRL(kk) = ICNTRL_U(kk)
+       IF ( RCNTRL_U(kk) >  0.0_dp ) RCNTRL(kk) = RCNTRL_U(kk)
+    ENDDO
+    CALL Integrate_Cell_S( Y, FIXc, RCONSTc, Tstart, Tend,                   &
+                           ATOL_U, RTOL_U, ICNTRL, RCNTRL,                   &
+                           Kw, Ghimj, Jac0, Ynew, Fcn0, Fcn, dFdT, Yerr,     &
+                           wP, wD, ISTAT, RSTAT, IERR )
+  END SUBROUTINE gpu_solve_cell_ws
+
+  SUBROUTINE integrate_batch_global_ws( nCell, Tstart, Tend, C, RCONST,      &
+                                        ATOL, RTOL, ICNTRL, RCNTRL, Perm,   &
+                                        ISTAT, RSTAT, IERR, tTotal, tKernel )
+    INTEGER(c_int), VALUE         :: nCell
+    REAL(c_double), VALUE         :: Tstart, Tend
+    REAL(c_double), INTENT(INOUT) :: C(NSPEC, nCell)
+    REAL(c_double), INTENT(IN)    :: RCONST(NREACT, nCell)
+    REAL(c_double), INTENT(IN)    :: ATOL(NVAR), RTOL(NVAR)
+    INTEGER(c_int), INTENT(IN)    :: ICNTRL(20, nCell)
+    REAL(c_double), INTENT(IN)    :: RCNTRL(20, nCell)
+    INTEGER(c_int), INTENT(IN)    :: Perm(nCell)
+    INTEGER(c_int), INTENT(OUT)   :: ISTAT(8, nCell)
+    REAL(c_double), INTENT(OUT)   :: RSTAT(3, nCell)
+    INTEGER(c_int), INTENT(OUT)   :: IERR(nCell)
+    REAL(c_double), INTENT(OUT)   :: tTotal, tKernel
+    REAL(dp), ALLOCATABLE :: Kw(:,:), Ghimj(:,:), Jac0(:,:)
+    REAL(dp), ALLOCATABLE :: Ynew(:,:), Fcn0(:,:), Fcn(:,:), dFdT(:,:)
+    REAL(dp), ALLOCATABLE :: Yerr(:,:), wP(:,:), wD(:,:)
+    INTEGER    :: nchunk, nch, cbase, ic, idx
+    INTEGER(8) :: t0, t1, t2, t3, crate
+    nchunk = env_int( 'GC_GPU_CHUNK', 32768 )
+    nchunk = MAX( 1024, MIN( nchunk, nCell ) )
+    ALLOCATE( Kw(NWORK_K,nchunk), Ghimj(NWORK_J,nchunk), Jac0(NWORK_J,nchunk), &
+              Ynew(NVAR,nchunk), Fcn0(NVAR,nchunk), Fcn(NVAR,nchunk),         &
+              dFdT(NVAR,nchunk), Yerr(NVAR,nchunk), wP(NVAR,nchunk),           &
+              wD(NVAR,nchunk) )
+    tKernel = 0.0_dp
+    CALL SYSTEM_CLOCK( t0, crate )
+    !$acc data copy(C) copyin(RCONST, ATOL, RTOL, ICNTRL, RCNTRL, Perm)      &
+    !$acc      copyout(ISTAT, RSTAT, IERR)                                   &
+    !$acc      create(Kw, Ghimj, Jac0, Ynew, Fcn0, Fcn, dFdT, Yerr, wP, wD)
+    DO cbase = 0, nCell-1, nchunk
+       nch = MIN( nchunk, nCell - cbase )
+       CALL SYSTEM_CLOCK( t1 )
+       !$acc parallel loop gang vector private(idx)
+       DO ic = 1, nch
+          idx = Perm(cbase+ic)
+          CALL gpu_solve_cell_ws( C(1:NVAR,idx), C(NVAR+1:NSPEC,idx),         &
+                   RCONST(:,idx), Tstart, Tend, ATOL, RTOL,                  &
+                   ICNTRL(:,idx), RCNTRL(:,idx),                             &
+                   Kw(:,ic), Ghimj(:,ic), Jac0(:,ic), Ynew(:,ic), Fcn0(:,ic),&
+                   Fcn(:,ic), dFdT(:,ic), Yerr(:,ic), wP(:,ic), wD(:,ic),    &
+                   ISTAT(:,idx), RSTAT(:,idx), IERR(idx) )
+       ENDDO
+       CALL SYSTEM_CLOCK( t2 )
+       tKernel = tKernel + REAL( t2 - t1, dp ) / REAL( crate, dp )
+    ENDDO
+    !$acc end data
+    CALL SYSTEM_CLOCK( t3 )
+    tTotal = REAL( t3 - t0, dp ) / REAL( crate, dp )
+    DEALLOCATE( Kw, Ghimj, Jac0, Ynew, Fcn0, Fcn, dFdT, Yerr, wP, wD )
+  END SUBROUTINE integrate_batch_global_ws
 
   !--------------------------------------------------------------------------
   ! Self test: solve one dummy cell (all RCONST = 0) on the device.

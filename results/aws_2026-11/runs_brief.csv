@@ -1,0 +1,31 @@
+Run ID,Model,Resolution,Days,Case,Hardware,Wall time (s),Wall time per day (s),Same-hardware stock run,Wall time vs stock (negative = faster),Speed-up (x),Accuracy vs stock
+C1-01,Classic,4x5,1,Stock,Compute1: 16 threads,577.6,578,,,,Base
+C1-02,Classic,4x5,1,CPU batch,Compute1: 16 threads,545.4,545,C1-01,-6%,1.06x,Bit-identical to stock
+C1-03,Classic,4x5,1,Hybrid,Compute1: 16 threads + 1 A100,442.6,443,C1-01,-23%,1.31x,Within rounding envelope
+C1-04,Classic,4x5,1,Hybrid,Compute1: 16 threads + 2 A100,538.4,538,C1-01,-7%,1.07x,Within rounding envelope (total time inflated by disk I/O on a shared node)
+C1-08,Classic,4x5,7,Stock,Compute1: 16 threads,3657.8,523,,,,Base
+C1-10,Classic,4x5,7,Hybrid,Compute1: 16 threads + 1 A100,3014.8,431,C1-08,-18%,1.21x,Pass (day-7 drift = rounding control)
+C1-11,Classic,4x5,7,Hybrid,Compute1: 16 threads + 2 A100,2745.2,392,C1-08,-25%,1.33x,Pass (day-7 drift = rounding control)
+C1-13,Classic,2x2.5,7,Stock,Compute1: 16 threads,17217.1,2460,,,,Base
+C1-14,Classic,2x2.5,7,Hybrid,Compute1: 16 threads + 1 A100,13572.3,1939,C1-13,-21%,1.27x,Within rounding envelope
+C1-16,Classic,2x2.5,7,Hybrid,Compute1: 16 threads + 2 A100,10062.2,1437,C1-13,-42%,1.71x,Within rounding envelope
+C1-17,Classic,4x5,1,Stock,Compute1: 16 threads,906,906,,,,Base
+C1-18,Classic,4x5,1,Hybrid,Compute1: 16 threads + 1 V100,792,792,C1-17,-13%,1.14x,Not checked
+AWS-01,Classic,4x5,1,Stock,AWS c7i: 32 threads,467,467,,,,Bit-identical to Compute1 stock
+AWS-02,Classic,4x5,1,CPU batch,AWS c7i: 32 threads,472,472,AWS-01,+1%,0.99x,Bit-identical to stock
+AWS-04,Classic,4x5,1,Stock,AWS p3dn: 6 threads,1969,1969,,,,Bit-identical to AWS-01
+AWS-05,Classic,4x5,1,Hybrid,AWS p3dn: 6 threads + 1 V100,1357,1357,AWS-04,-31%,1.45x,Pass (0 of 391 outside)
+AWS-25,Classic,4x5,31,Stock,AWS p3dn: 24 threads,19907,642,,,,Base
+AWS-26,Classic,4x5,31,Hybrid,AWS p3dn: 24 threads + 2 V100,18099,584,AWS-25,-9%,1.10x,Pass (0 of 388 monthly means outside)
+AWS-07,GCHP,C24,1,Stock,AWS r7i: 6 ranks,2534,2534,,,,Bit-identical to Compute1 stock
+AWS-08,GCHP,C24,1,CPU batch,AWS r7i: 6 ranks,2524,2524,AWS-07,-0%,1.00x,Bit-identical to stock
+AWS-11,GCHP,C24,1,Stock,AWS p3dn: 6 ranks,3358,3358,,,,Bit-identical to AWS-07
+AWS-12,GCHP,C24,1,Hybrid,AWS p3dn: 6 ranks + 1 V100,2892,2892,AWS-11,-14%,1.16x,Pass (0 of 401 outside)
+AWS-14,GCHP,C24,1,Stock,AWS p3dn: 2 nodes x 6 ranks,2664,2664,,,,Base (2-node layout)
+AWS-15,GCHP,C24,1,Hybrid,AWS p3dn: 2 nodes x 6 ranks + 1 V100/node,2047,2047,AWS-14,-23%,1.30x,Pass (0 of 401 outside)
+AWS-16,GCHP,C24,1,Stock,AWS p3dn: 2 nodes x 12 ranks,1600,1600,,,,Base (2-node layout)
+AWS-18,GCHP,C24,1,Hybrid,AWS p3dn: 2 nodes x 12 ranks + 2 V100/node,1316,1316,AWS-16,-18%,1.22x,Pass (0 of 401 outside)
+AWS-20,GCHP,C24,7,Stock,AWS r7i: 6 ranks,15269,2181,,,,Base
+AWS-22,GCHP,C24,7,Hybrid,AWS p3dn: 6 ranks + 1 V100,18808,2687,,,,Pass 6 of 7 days (day 2: 4 of 401 briefly outside)
+AWS-31,GCHP,C24,31,Stock,AWS r7i: 2 nodes x 12 ranks,32113,1036,,,,Base
+AWS-33,GCHP,C24,31,Hybrid,AWS p3dn: 2 nodes x 12 ranks + 2 V100/node,37771,1218,,,,Pass on 30-day mean (0 of 416); brief daily exceedances 6-12 and 15 Jul

@@ -1,0 +1,93 @@
+########## TIMERS (seconds)
+timer                          stock    hybrid   change   control
+GEOS-Chem                      19905     18097      -9%     14619
+HEMCO                           2039      2040       0%      1445
+All chemistry                  10079      8514     -16%      6884
+=> Gas-phase chem               7532      6012     -20%      4971
+=> Photolysis                    699       719       3%       519
+=> Aerosol chem                 1591      1542      -3%      1197
+Transport                       2124      2117      -0%      1702
+Convection                      1327      1333       0%       947
+Boundary layer mixing           1068      1017      -5%       982
+Dry deposition                    63        63      -0%        60
+Wet deposition                  1009      1022       1%       843
+Diagnostics                     1683      1505     -11%      1355
+########## BENCHMARK METRICS (metrics.py)
+== stock
+Traceback (most recent call last):
+  File "/shared/bench/classic/stock/metrics.py", line 398, in <module>
+    main()
+  File "/shared/bench/classic/stock/metrics.py", line 387, in main
+    ds = read_metrics_collection(data_dir)
+  File "/shared/bench/classic/stock/metrics.py", line 184, in read_metrics_collection
+    ds = combine_dataset(file_list)
+  File "/shared/bench/classic/stock/metrics.py", line 88, in combine_dataset
+    ds = xr.open_mfdataset(
+  File "/shared/pyenv/lib/python3.10/site-packages/xarray/backends/api.py", line 1635, in open_mfdataset
+    datasets = [open_(p, **open_kwargs) for p in paths1d]
+  File "/shared/pyenv/lib/python3.10/site-packages/xarray/backends/api.py", line 1635, in <listcomp>
+    datasets = [open_(p, **open_kwargs) for p in paths1d]
+  File "/shared/pyenv/lib/python3.10/site-packages/xarray/backends/api.py", line 693, in open_dataset
+== hybrid
+Traceback (most recent call last):
+  File "/shared/bench/classic/hybrid/metrics.py", line 398, in <module>
+    main()
+  File "/shared/bench/classic/hybrid/metrics.py", line 387, in main
+    ds = read_metrics_collection(data_dir)
+  File "/shared/bench/classic/hybrid/metrics.py", line 184, in read_metrics_collection
+    ds = combine_dataset(file_list)
+  File "/shared/bench/classic/hybrid/metrics.py", line 88, in combine_dataset
+    ds = xr.open_mfdataset(
+  File "/shared/pyenv/lib/python3.10/site-packages/xarray/backends/api.py", line 1635, in open_mfdataset
+    datasets = [open_(p, **open_kwargs) for p in paths1d]
+  File "/shared/pyenv/lib/python3.10/site-packages/xarray/backends/api.py", line 1635, in <listcomp>
+    datasets = [open_(p, **open_kwargs) for p in paths1d]
+  File "/shared/pyenv/lib/python3.10/site-packages/xarray/backends/api.py", line 693, in open_dataset
+== control
+Traceback (most recent call last):
+  File "/shared/bench/classic/control/metrics.py", line 398, in <module>
+    main()
+  File "/shared/bench/classic/control/metrics.py", line 387, in main
+    ds = read_metrics_collection(data_dir)
+  File "/shared/bench/classic/control/metrics.py", line 184, in read_metrics_collection
+    ds = combine_dataset(file_list)
+  File "/shared/bench/classic/control/metrics.py", line 88, in combine_dataset
+    ds = xr.open_mfdataset(
+  File "/shared/pyenv/lib/python3.10/site-packages/xarray/backends/api.py", line 1635, in open_mfdataset
+    datasets = [open_(p, **open_kwargs) for p in paths1d]
+  File "/shared/pyenv/lib/python3.10/site-packages/xarray/backends/api.py", line 1635, in <listcomp>
+    datasets = [open_(p, **open_kwargs) for p in paths1d]
+  File "/shared/pyenv/lib/python3.10/site-packages/xarray/backends/api.py", line 693, in open_dataset
+########## MONTHLY-MEAN SPECIES: global mean (all levels), % difference from stock
+species compared: 388; |diff| ratio hybrid/control: median 0.98 p90 1.08 max 2.70; species with ratio>3: 0
+species     stock mean (mol/mol)    hybrid %   control %
+O3                    1.6926e-06   +1.06e-06   +6.82e-07
+OH                    1.8219e-11   +9.58e-07   +1.24e-06
+CO                    4.4430e-08   +6.24e-07   -7.92e-06
+NO                    2.0315e-09   -5.24e-06   -9.45e-07
+NO2                   1.6593e-09   -2.03e-06   -7.24e-07
+HNO3                  1.1434e-09   +4.73e-05   +7.29e-05
+CH2O                  1.4076e-10   +1.20e-05   -9.67e-07
+ISOP                  1.1169e-11   -1.14e-05   -2.97e-05
+MTPA                  1.1099e-12   -1.94e-05   -4.75e-05
+MTPO                  2.1886e-10   +2.34e-06   +4.10e-06
+LIMO                  1.3566e-11   -2.48e-05   -2.70e-05
+SO2                   4.0914e-11   +9.67e-08   -7.30e-07
+SO4                   1.3763e-10   +1.74e-06   +9.60e-07
+NH4                   1.0462e-10   -5.70e-05   -1.83e-04
+NIT                   4.5221e-11   -1.98e-04   -1.25e-04
+BCPI                  3.5917e-11   +0.00e+00   +0.00e+00
+OCPI                  3.0534e-10   +0.00e+00   +0.00e+00
+SALA                  4.6366e-11   +1.56e-12   -4.18e-13
+PAN                   3.5839e-11   -7.80e-06   +1.54e-05
+CH4                   1.2916e-06   +6.32e-08   -9.33e-08
+largest hybrid/control ratios: MTPO=2.7, HMS=1.9, TSOG0=1.7, TSOG1=1.4, H1301=1.4, CFC11=1.3
+########## MTPO signed bias over the month (restart files)
+0702: mean bias hybrid -7.22e-09%  control -1.28e-08%  | cells hybrid>stock 47%  control>stock 48%
+0708: mean bias hybrid +1.53e-06%  control +1.85e-06%  | cells hybrid>stock 49%  control>stock 49%
+0715: mean bias hybrid +4.16e-06%  control +3.70e-06%  | cells hybrid>stock 49%  control>stock 47%
+0722: mean bias hybrid +8.69e-06%  control +4.92e-06%  | cells hybrid>stock 49%  control>stock 49%
+0725: mean bias hybrid +1.10e-05%  control +5.88e-06%  | cells hybrid>stock 47%  control>stock 49%
+0729: mean bias hybrid -2.87e-05%  control +9.50e-06%  | cells hybrid>stock 49%  control>stock 50%
+0801: mean bias hybrid +1.54e-06%  control +6.39e-06%  | cells hybrid>stock 47%  control>stock 53%
+CLASSIC_RESULTS_DONE

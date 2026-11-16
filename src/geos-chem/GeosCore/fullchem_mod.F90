@@ -144,6 +144,7 @@ MODULE FullChem_Mod
   REAL(KIND=8), SAVE :: HybTcpu     = 0.0d0    ! cum. s of the CPU tail loop
   REAL(KIND=8), SAVE :: HybTsolve   = 0.0d0    ! cum. s of the concurrent solve
   INTEGER,      SAVE :: HybNdev     = 1        ! # of GPUs driven concurrently
+  INTEGER,      SAVE :: HybNdevNode = 0        ! GCHP/LB: GPU ranks on this node (shm_rank < n)
   REAL(KIND=8), SAVE :: HybDevRate(0:15) = -1.0d0 ! per-device work units / s (EMA)
   !   Device slices of the GPU head are weighted by these measured rates, so a
   !   device that is slower (e.g. shared with another job) gets less work.
@@ -196,6 +197,11 @@ MODULE FullChem_Mod
        INTEGER(c_int),         VALUE       :: nameLen
        CHARACTER(KIND=c_char), INTENT(OUT) :: devName(*)
      END SUBROUTINE gc_gpu_info
+     FUNCTION gc_gpu_set_device( d ) BIND(C, name='gc_gpu_set_device')
+       USE ISO_C_BINDING, ONLY : c_int
+       INTEGER(c_int), VALUE :: d
+       INTEGER(c_int)        :: gc_gpu_set_device
+     END FUNCTION gc_gpu_set_device
      SUBROUTINE gc_gpu_selftest( rc, nsteps, tTotal )                        &
                 BIND(C, name='gc_gpu_selftest')
        USE ISO_C_BINDING, ONLY : c_int, c_double
@@ -282,7 +288,7 @@ CONTAINS
     USE GcKpp_Parameters
     USE GcKpp_Integrator,         ONLY : Integrate
     USE GcKpp_BatchIntegrator,    ONLY : Integrate_Model
-    USE ISO_C_BINDING,            ONLY : c_char, C_NULL_CHAR
+    USE ISO_C_BINDING,            ONLY : c_char, c_int, C_NULL_CHAR
     USE GcKpp_Function
     USE GcKpp_Global
     USE GcKpp_Rates,              ONLY : UPDATE_RCONST, RCONST
@@ -378,7 +384,11 @@ CONTAINS
     REAL(dp) :: Vloc(NVAR),     Aout(NREACT)
 
     ! Batched chemistry path (GC_BATCH_CHEM=1) locals
+#ifdef MPI_LOAD_BALANCE
+    INTEGER               :: ic, idx, sKey, sMax, sPos   ! (NCELL is the LB path's)
+#else
     INTEGER               :: nCell, ic, idx, sKey, sMax, sPos
+#endif
     INTEGER               :: envStat
     CHARACTER(LEN=32)     :: envVal
     INTEGER,  ALLOCATABLE :: BatchMap(:,:)      ! (3,nCell): idx -> I,J,L
@@ -392,6 +402,8 @@ CONTAINS
     INTEGER,  ALLOCATABLE :: BatchISTATUS(:,:)  ! (20,nCell) solver counters
     REAL(dp), ALLOCATABLE :: BatchRSTATE(:,:)   ! (20,nCell) solver outputs
     REAL(dp)              :: Cb4(NSPEC)         ! pre-solve C (retry buffer)
+    ! Retry tolerances: identical to the stock retry (inflated only in MODEL_GEOS)
+    REAL(dp)              :: ATOLr(NVAR), RTOLr(NVAR)
 
     ! GPU batch path (GC_BATCH_CHEM=2) locals
     INTEGER               :: nFail, kf, gpuNdev, gpuRc, gpuNst
@@ -410,6 +422,12 @@ CONTAINS
 
     ! Hybrid CPU+GPU path (GC_BATCH_CHEM=3) locals
     INTEGER               :: nGpu, nCpu, nHead, hd
+    INTEGER               :: nBlk, gpuLo, gpuHi
+#if defined(MPI_LOAD_BALANCE) && defined(GC_GPU_CHEM)
+    ! contiguous views of this rank's GPU block of the node-shared arrays
+    REAL(fp), POINTER, CONTIGUOUS :: Cblk(:,:), RCblk(:,:), RCNblk(:,:)
+    INTEGER,  POINTER, CONTIGUOUS :: ICblk(:,:)
+#endif
     INTEGER               :: icl, nLoop, nXY
     REAL(dp)              :: devW(0:15), devCum, devSum
     INTEGER,  ALLOCATABLE :: LoopMap(:,:)      ! (3,nLoop) main-loop visit order
@@ -716,6 +734,13 @@ CONTAINS
     DT   = GET_TS_CHEM()          ! Chemistry timestep [s]
     ATOL = State_Chm%KPP_AbsTol   ! Absolute tolerance
     RTOL = State_Chm%KPP_RelTol   ! Relative tolerance
+#if defined( MODEL_GEOS )
+    ATOLr = 1.0e-2_dp * Input_Opt%KppTolScale   ! GEOS inflates retry tolerances
+    RTOLr = 1.0e-2_dp * Input_Opt%KppTolScale   ! (same as stock MODEL_GEOS retry)
+#else
+    ATOLr = ATOL                                ! Classic/GCHP: stock retry keeps
+    RTOLr = RTOL                                ! the original tolerances
+#endif
 
     !========================================================================
     ! BATCHED CHEMISTRY: runtime switch + per-timestep setup
@@ -806,7 +831,29 @@ CONTAINS
                 IF ( gpuNameC(N) == C_NULL_CHAR ) EXIT
                 gpuName(N:N) = gpuNameC(N)
              ENDDO
+#ifdef MPI_LOAD_BALANCE
+             ! GCHP: only the node's GPU ranks (shm_rank < #devices) create a
+             ! device context; every other rank stays CPU-only.
+             HybNdevNode = MAX( MIN( HybNdev, gpuNdev, shm_size, 16 ), 0 )
+             IF ( shm_rank < HybNdevNode ) THEN
+                ! select this rank's own GPU first: without it every GPU rank's
+                ! selftest context lands on device 0 (2 contexts x ~25 GB stack
+                ! reservation -> CUDA out of memory with 2 GPU ranks per node)
+                IF ( gc_gpu_set_device( INT( shm_rank, c_int ) ) < 0 ) THEN
+                   gpuRc = -1; gpuNst = 0; gpuTa = 0.0_dp
+                ELSE
+                   CALL gc_gpu_selftest( gpuRc, gpuNst, gpuTa )
+                ENDIF
+             ELSE
+                gpuRc = 1; gpuNst = 0; gpuTa = 0.0_dp
+             ENDIF
+             IF ( Input_Opt%amIRoot ) THEN
+                WRITE( 6, '(a,i0,a,i0,a)' ) 'GC_HYB_GCHP: ', HybNdevNode,      &
+                     ' GPU rank(s) per node out of ', shm_size, ' ranks'
+             ENDIF
+#else
              CALL gc_gpu_selftest( gpuRc, gpuNst, gpuTa )
+#endif
              IF ( Input_Opt%amIRoot ) THEN
                 WRITE( 6, '(a,i0,a,a)' ) 'GC_GPU_CHEM: nDev=', gpuNdev,     &
                                        '  device=', TRIM( gpuName )
@@ -853,6 +900,7 @@ CONTAINS
     nGpu    = 0
     nHead   = 0
     nDevUse = 1
+#ifndef MPI_LOAD_BALANCE
     IF ( DoBatchChem ) THEN
 
        ! Pre-scan the grid (serial, cheap) to index the cells that the main
@@ -1075,6 +1123,7 @@ CONTAINS
        ENDDO
        ENDDO
     ENDIF
+#endif
     CALL SYSTEM_CLOCK( tLoopStart, gpuRate )
     tailPhase = .FALSE.
 
@@ -2421,7 +2470,7 @@ CONTAINS
 
           ! Call the integrator again (2nd launch, failed cells only)
           CALL gc_gpu_integrate_batch( nFail, 0.0_dp, DT, FailC, FailRCONST, &
-                                       ATOL, RTOL, FailICNTRL, FailRCNTRL,   &
+                                       ATOLr, RTOLr, FailICNTRL, FailRCNTRL,   &
                                        FailPerm, FailISTAT, FailRSTAT,       &
                                        FailIERR, gpuT2a, gpuT2k )
           GpuNretry  = GpuNretry  + nFail
@@ -2572,7 +2621,7 @@ CONTAINS
              RCNTRL       = BatchRCNTRL(:,ic)
              RCNTRL(3)    = 0.0_dp
              BatchC(:,ic) = BatchC0(:,ic)
-             CALL Integrate_Model( 0.0_dp, DT, ICNTRL, RCNTRL, ATOL, RTOL,   &
+             CALL Integrate_Model( 0.0_dp, DT, ICNTRL, RCNTRL, ATOLr, RTOLr, &
                                    BatchC(1:NVAR,ic),                        &
                                    BatchC(NVAR+1:NSPEC,ic),                  &
                                    BatchRCONST(:,ic),                        &
@@ -2761,7 +2810,7 @@ CONTAINS
              BatchC(:,idx) = Cb4
 
              ! Call the integrator again
-             CALL Integrate_Model( 0.0_dp, DT, ICNTRL, RCNTRL, ATOL, RTOL,   &
+             CALL Integrate_Model( 0.0_dp, DT, ICNTRL, RCNTRL, ATOLr, RTOLr, &
                                    BatchC(1:NVAR,idx),                       &
                                    BatchC(NVAR+1:NSPEC,idx),                 &
                                    BatchRCONST(:,idx),                       &
@@ -3122,6 +3171,108 @@ CONTAINS
        RETURN
     ENDIF
 
+#ifdef GC_GPU_CHEM
+    !=======================================================================
+    ! HYBRID GPU CHEMISTRY FOR GCHP (GC_BATCH_CHEM=3 with MPI load balancing)
+    !
+    ! All cells of this node are already in the shared-memory arrays C_1D,
+    ! RCONST_1D, ...  Ranks 0..HybNdevNode-1 each own one GPU: each claims a
+    ! contiguous block (fraction HybWorkFrac of NCELL_total, split evenly
+    ! over the GPU ranks), marks the block taken, and after a barrier solves
+    ! it on its device with ONE launch.  The other ranks meanwhile drain the
+    ! remaining cells through the stock atomic work queue below; the GPU
+    ! ranks join that queue when their launch returns.
+    !=======================================================================
+    nGpu  = 0
+    gpuLo = 1
+    gpuHi = 0
+    IF ( BatchMode == 3 .and. HybNdevNode > 0 ) THEN
+       nBlk = INT( REAL( NCELL_total, dp ) * HybWorkFrac /                    &
+                   REAL( HybNdevNode, dp ) )
+       IF ( shm_rank < HybNdevNode .and. nBlk > 0 ) THEN
+          gpuLo = 1 + shm_rank * nBlk
+          gpuHi = MIN( gpuLo + nBlk - 1, NCELL_total )
+          nGpu  = gpuHi - gpuLo + 1
+          DO I_CELL = gpuLo, gpuHi
+             IF ( cell_status(I_CELL) == 0 ) cell_status(I_CELL) = 1
+          ENDDO
+       ENDIF
+       CALL MPI_Barrier(shm_comm, RC)    ! claims visible before the queue starts
+       CALL SYSTEM_CLOCK( hybC0, gpuRate )
+    ENDIF
+    IF ( nGpu > 0 ) THEN
+       ALLOCATE( BatchC0( NSPEC, nGpu ), BatchISTAT8( 8, nGpu ),             &
+                 BatchRSTAT3( 3, nGpu ), BatchIERR( nGpu ), BatchPerm( nGpu ) )
+       DO ic = 1, nGpu
+          BatchPerm(ic) = ic
+          BatchC0(:,ic) = C_1D(:,gpuLo+ic-1)
+       ENDDO
+       Cblk   => C_1D     (:,gpuLo:gpuHi)
+       RCblk  => RCONST_1D(:,gpuLo:gpuHi)
+       ICblk  => ICNTRL_1D(:,gpuLo:gpuHi)
+       RCNblk => RCNTRL_1D(:,gpuLo:gpuHi)
+       CALL SYSTEM_CLOCK( gpuC0, gpuRate )
+       CALL gc_gpu_integrate_batch_dev( shm_rank, nGpu, 0.0_dp, DT,          &
+                    Cblk, RCblk, ATOL, RTOL, ICblk, RCNblk, BatchPerm,        &
+                    BatchISTAT8, BatchRSTAT3, BatchIERR, gpuTa, gpuTk )
+       CALL SYSTEM_CLOCK( gpuC1 )
+       gpuTw = REAL( gpuC1 - gpuC0, dp ) / REAL( gpuRate, dp )
+       nFail = 0
+       DO ic = 1, nGpu
+          I_CELL = gpuLo + ic - 1
+          ISTATUS_1D(:,I_CELL)   = 0
+          RSTATE_1D(:,I_CELL)    = 0.0_fp
+          ISTATUS_1D(1:8,I_CELL) = BatchISTAT8(:,ic)
+          RSTATE_1D(1:3,I_CELL)  = BatchRSTAT3(:,ic)
+          IF ( BatchIERR(ic) < 0 ) THEN
+             ! retry on the CPU with the stock protocol (reset C, zero Hstart)
+             nFail = nFail + 1
+             IF ( .not. doSuppress ) THEN
+                WRITE( 6, * ) '### INTEGRATE RETURNED ERROR AT (GPU): ', I_CELL
+                errorCount = errorCount + 1
+                IF ( errorCount > INTEGRATE_FAIL_TOGGLE ) doSuppress = .TRUE.
+             ENDIF
+             ICNTRL         = ICNTRL_1D(:,I_CELL)
+             RCNTRL         = RCNTRL_1D(:,I_CELL)
+             RCNTRL(3)      = 0.0_dp
+             C_1D(:,I_CELL) = BatchC0(:,ic)
+             CALL Integrate_Model( 0.0_dp, DT, ICNTRL, RCNTRL, ATOLr, RTOLr, &
+                                   C_1D(1:NVAR,I_CELL),                      &
+                                   C_1D(NVAR+1:NSPEC,I_CELL),                &
+                                   RCONST_1D(:,I_CELL), ISTATUS, RSTATE, IERR )
+             ISTATUS_1D(:,I_CELL) = ISTATUS_1D(:,I_CELL) + ISTATUS
+             RSTATE_1D(:,I_CELL)  = RSTATE
+             IF ( IERR < 0 ) THEN
+                WRITE( 6, '(a)' ) '## INTEGRATE FAILED TWICE (GPU block) !!! '
+                Failed2x = .TRUE.
+             ENDIF
+          ENDIF
+       ENDDO
+       ! Same per-cell post-solve step the stock load-balance loop applies
+       ! before storing C_1D: revert sea-salt alkalinity from equivalents
+       ! (only when KPP handles aqueous sulfur chemistry).  Done through the
+       ! stock routine on the THREADPRIVATE C so the arithmetic is identical.
+       IF ( .not. State_Chm%Do_SulfateMod_SeaSalt ) THEN
+          DO ic = 1, nGpu
+             I_CELL = gpuLo + ic - 1
+             C(:) = C_1D(:,I_CELL)
+             CALL fullchem_ConvertEquivToAlk()
+             C_1D(:,I_CELL) = C(:)
+          ENDDO
+       ENDIF
+       GpuNcalls  = GpuNcalls  + 1
+       GpuNcells  = GpuNcells  + nGpu
+       GpuTapi    = GpuTapi    + gpuTa
+       GpuTkernel = GpuTkernel + gpuTk
+       GpuTwall   = GpuTwall   + gpuTw
+       WRITE( 6, '(a,i3,a,i4,a,i7,a,i7,a,f8.3,a,f8.3,a,i4,a,f9.2)' )        &
+            'GC_HYB_GCHP: rank', shm_rank, ' call', GpuNcalls,              &
+            ' nGpu=', nGpu, ' of', NCELL_total, ' t_gpu=', gpuTw,           &
+            ' kernel=', gpuTk, ' nFail=', nFail, ' cum_gpu=', GpuTwall
+       DEALLOCATE( BatchC0, BatchISTAT8, BatchRSTAT3, BatchIERR, BatchPerm )
+    ENDIF
+#endif
+
     !$OMP PARALLEL DO                                                        &
     !$OMP DEFAULT( SHARED                                                   )&
     !$OMP PRIVATE( I,        J,        L,       N                           )&
@@ -3348,6 +3499,18 @@ CONTAINS
        CALL GC_Error('MPI_Barrier failed', RC, ThisLoc)
        RETURN
     ENDIF
+
+#ifdef GC_GPU_CHEM
+    IF ( BatchMode == 3 ) THEN
+       CALL SYSTEM_CLOCK( hybC1 )
+       tRegion   = REAL( hybC1 - hybC0, dp ) / REAL( gpuRate, dp )
+       HybTsolve = HybTsolve + tRegion
+       IF ( shm_rank == 0 ) THEN
+          WRITE( 6, '(a,i7,a,f8.3,a,f9.2)' ) 'GC_HYB_GCHP: node solve ncell=', &
+               NCELL_total, ' t_loop=', tRegion, ' cum_loop=', HybTsolve
+       ENDIF
+    ENDIF
+#endif
 
     ! Loop over the grid to set all persistent 3D arrays from the 1D data
     ! When not using MPI load balancing this is done in the integration

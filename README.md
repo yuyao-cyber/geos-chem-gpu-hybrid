@@ -1,7 +1,7 @@
 # GEOS-Chem chemistry on GPUs: a hybrid CPU + GPU KPP integrator
 
 This repository packages the changes that let **GEOS-Chem Classic 14.7.1**
-solve its gas-phase chemistry on NVIDIA GPUs, concurrently with the CPU, using
+(and, since November 2026, **GCHP 14.7.1**) solve its gas-phase chemistry on NVIDIA GPUs, concurrently with the CPU, using
 the model's own KPP-generated Rosenbrock (Rodas3) solver. Nothing in the
 chemistry was approximated or re-derived: the GPU runs the same generated
 kernels as the CPU, and the CPU code path of the modified model is
@@ -36,6 +36,40 @@ control experiment: a CPU-only build with fused multiply-add enabled in the KPP
 library alone (no GPU at all) drifts from stock by exactly the same amount as
 the GPU does, species by species and day by day over a 7-day run
 (`results/drift_week_clean.txt` vs `results/drift_control_clean.txt`).
+
+## November 2026 update: GCHP and the AWS one-month benchmark
+
+* **GCHP support.** The same `fullchem_mod.F90` now serves both models. Under
+  GCHP's MPI load balancing (`MPI_LOAD_BALANCE`), the first `GC_GPU_NDEV` ranks
+  on each node each own one GPU. Each claims a contiguous block of the node's
+  shared cell arrays (`GC_GPU_FRAC` of the cells, fixed), solves it in one
+  launch, and then joins the stock work queue. All new code is inside
+  `#ifdef MPI_LOAD_BALANCE` / `GC_GPU_CHEM`; Classic preprocesses to the same
+  code as before, apart from three unused declarations. GCHP build option:
+  `patches/GCHP-14.7.1_gpu-lib-option.patch` (`-DGC_GPU_LIB=...`).
+* **Retry fidelity fix.** A cell that fails on the GPU is retried on the CPU
+  with exactly the stock retry tolerances.
+* **Low-memory GPU mode** (`GC_GPU_WORKSPACE=global`, chunk size
+  `GC_GPU_CHUNK`). The solver workspace moves to device global memory, so a
+  32 GB V100 is enough. It costs about 25% more kernel time.
+* **AWS validation** (ParallelCluster, V100 `p3dn.24xlarge`; CPU baselines on
+  `c7i`/`r7i`):
+  * Bit-identity: with the GPU off, both models match stock exactly.
+  * Rounding envelope: every hybrid run passes.
+  * July 2019 one-month benchmark (GEOS-FP):
+    * Classic 4x5: 0 of 388 species outside on the monthly means.
+    * GCHP C24 (2 nodes): 0 of 416 variables outside on the mean of the 30
+      daily checkpoints. There were short daily exceedances (HMS on 6 to
+      12 July; the isoprene chain on 15 July, in about 10 cells), both back
+      inside the envelope the next day.
+  * Same-hardware speed-ups: 1.10-1.45x whole model (Classic and GCHP).
+  * Results are in `results/aws_2026-11/` (`runs_brief.csv` is the summary
+    table). The scripts are in `aws/scripts/` (`envelope.py` is the
+    pass/fail test).
+* **Known issue (not GPU-related).** Multi-node GCHP with OpenMPI 5.0.5 over
+  TCP deadlocked at the first HISTORY file write (all ranks in
+  `MPI_Win_fence`, inside the `han` collective component). The stock run hung
+  too. Workaround under test: `OMPI_MCA_coll=^han,adapt`.
 
 ## What was changed (and what was not)
 
@@ -85,13 +119,14 @@ per chemistry timestep, in fullchem_mod:
 
 ```
 patches/       exact diffs vs the 14.7.1 tags (geos-chem, GCClassic) and vs KPP 3.3.0
-src/           the modified/new files in GEOS-Chem tree layout
+src/           the modified/new files in tree layout (geos-chem, GCClassic, GCHP)
+aws/           AWS ParallelCluster build/run/compare scripts and the July 2019 benchmark scripts
 gpulib/        the GPU solver library: sources, build/relink/submit scripts, analysis tools
 standalone/    the KPP-Standalone batch harness used for the bit-exact gate and GPU benchmarks
 kpp-codegen/   (see patches/) the KPP generator "#ACCDIRECTIVES" mode
 docs/          full write-ups: HYBRID_RESULTS.md (main), GPU_IN_MODEL_RESULTS.md,
                BATCH_INTEGRATION_RESULTS.md, KPP_GPU_CODEGEN_RESULTS.md, PHASE1_*.md, FINDINGS.md
-results/       restart comparisons, drift tables, timer JSON of the reported runs
+results/       restart comparisons, drift tables, timer JSON; aws_2026-11/ = AWS + benchmark results
 rundir/        the run configuration used (dates, HISTORY collections, job scripts)
 ```
 
@@ -116,8 +151,9 @@ rundir/        the run configuration used (dates, HISTORY collections, job scrip
 ## Status and next steps
 
 Validated and measured: 1-day and 7-day runs at 4x5 and 2x2.5, 1 and 2 GPUs.
-Not yet done: 4-GPU measurement, 24-thread baseline, auto-reduce on the GPU,
-GCHP, moving the rate-constant computation onto the device, and a build with a
+Done since: GCHP (1 and 2 nodes, 1 and 2 GPUs per node), a 24-thread baseline,
+and the July 2019 one-month benchmark on AWS. Not yet done: 4-GPU measurement,
+an adaptive CPU/GPU split for GCHP, auto-reduce on the GPU, moving the rate-constant computation onto the device, and a build with a
 vendor-neutral offload compiler (the kernels are plain Fortran + OpenACC; the
 NVIDIA-specific pieces are confined to `gc_gpu_devinfo.c` and the stack-size
 environment variable).
